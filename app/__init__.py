@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
 from flask import Flask
-from flask_bootstrap import Bootstrap4
+from flask_bootstrap import Bootstrap
 
 def create_app():
     
     app = Flask(__name__)
-    bootstrap = Bootstrap4(app)
+    bootstrap = Bootstrap(app)
     app.config["SECRET_KEY"] = "notasecret iguess"
 
     from .views import views
