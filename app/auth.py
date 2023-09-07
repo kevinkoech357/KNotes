@@ -5,41 +5,73 @@
 # request shows all info sent by form
 # flash is used to flash messages onscreen
 
-from flask import Blueprint, render_template, request, flash
+from flask import Blueprint, render_template, request, flash, redirect, url_for
+from .models import User
+from werkzeug.security import generate_password_hash, check_password_hash
+from . import db
+from flask_login import login_user, login_required, logout_user, current_user
 
 auth = Blueprint("auth", __name__)
 
 @auth.route("/login", methods=['GET', 'POST'])
 def login():
-    # request allows us to get information that was sent into the form
-    data = request.form
-    # prints data => example: ImmutableMultiDict([('email', 'kev@gmail.com'), ('password', '1234')])
-    print(data)
-    return render_template('login.html')
+
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+
+        user = User.query.filter_by(email=email).first()
+        if user:
+            if check_password_hash(user.password, password):
+                flash('Logged in succesfully!.', category='success')
+                login_user(user, remember=True)
+
+                return redirect(url_for('views.home'))
+            else:
+                flash('Incorrect password. Try again!', category='error')
+        else:
+            flash('Email doesn\t exist!.', category='error')
+
+    return render_template('login.html', user=current_user)
 
 @auth.route("/logout")
+@login_required
 def logout():
 
-    return render_template('home.html')
+    logout_user()
+    return redirect(url_for('auth.login'))
 
 @auth.route("/sign-up", methods=['GET', 'POST'])
 def sign_up():
 
     if request.method == 'POST':
         email = request.form.get('email')
-        firstname = request.form.get('firstname')
-        password = request.form.get('form')
+        first_name = request.form.get('firstname')
+        password = request.form.get('password')
         confirm_password = request.form.get('confirm_password')
 
-        if len(email) < 4:
+        user = User.query.filter_by(email=email).first
+
+        if user:
+            flash('Email already exists.', category='error')
+        elif len(email) < 4:
             flash('Email must be greater than 4 characters.', category='error')
-        elif len(firstname) < 3:
+        elif len(first_name) < 3:
             flash('First Name must be greater than 2 characters.', category='error')
         elif password != confirm_password:
             flash('Passwords don\'t match.', category='error')
         elif len(password) < 8:
             flash('Password must be greater than 7 characters.', category='error')
         else:
-            # add user to database
+            # take user input i.e email, first name and password
+            # hash the password
+            new_user = User(email=email, first_name=first_name, password=generate_password_hash(password, method='sha256'))
+            db.session.add(new_user) # add user to db
+            db.session.commit() # update db
+            login_user(user, remember=True) # log-ins user after acc creation
+
             flash('Account created succesfully.', category='success')
-    return render_template('sign_up.html')
+
+            return redirect(url_for('views.home')) # redirect to homepage
+
+    return render_template('sign_up.html', user=current_user)
