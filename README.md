@@ -7,7 +7,7 @@ git clone https://github.com/kevinkoech357/KNotes
 
 cd KNotes
 ```
-## Setting up python virual environment
+## Setting up python virtual environment
 ```bash
 python3 -m venv env
 
